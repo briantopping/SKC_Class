@@ -1,0 +1,38 @@
+version: '3'
+services:
+  zk4kafka-01-s:
+    image: confluentinc/cp-zookeeper:latest
+    ports:
+      - "33472:33472"
+    container_name: zk4kafka-01-c
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 33472
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: localhost:33477:33478
+    restart: always
+  kafka-01-s:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9092:9092"
+    container_name: kafka-01-c
+    depends_on:
+      - zk4kafka-01-s
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zk4kafka-01-c:33472
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+    restart: always
+  cas-01-s:
+    image: cassandra:3
+    container_name: cas-01-c
+    restart: always
+#  avro-producer-s:
+#    image: ansrivas/avro-producer:latest
+#    container_name: avro-producer-c
+#    build: .
+#    network_mode: host

@@ -1,0 +1,11 @@
+{"namespace": "com.developintelligence.skc.common.schema",
+ "type": "record",
+ "name": "Tweet",
+ "fields": [
+     {"name": "id", "type": ["long"]},
+     {"name": "date",  "type": ["string"]},
+     {"name": "authorName",  "type": ["string"]},
+     {"name": "body",  "type": ["string"]},
+     {"name": "retweets",  "type": ["int"]}
+ ]
+}

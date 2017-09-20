@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <!--
+            To enable ANSI support on Windows  add the Jansi jar to your application and Log4j
+            will automatically make use of it when writing to the console. Note that Unix-based
+            support ANSI color codes by default.
+            -->
+            <PatternLayout pattern="%highlight{%d{HH:mm:ss.SSS} %level{length=1}: %c{1.} - %msg%n}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=black, DEBUG=green bold, TRACE=blue}"/>
+            <!--<PatternLayout pattern="%d{HH:mm:ss.SSS} %level{length=1}: %c{1.} - %msg%n"/>-->
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="DEBUG">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
