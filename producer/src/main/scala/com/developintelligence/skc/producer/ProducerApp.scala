@@ -19,7 +19,7 @@ object ProducerApp extends App with StrictLogging {
   val supervisor = actorSystem.actorOf(Supervisor.props(), "supervisor")
 
   // these two are what we are going to initialize our stream handler with
-  val topic = "tweet_queue"
+  val topic = "test3"
   val searchKeys = Seq("startbucks", "sbux", "startbuck",
     "coffestartbuck", "coffee", "StarbucksUK", "StarbucksCanada", "StarbucksMY",
     "StarbucksIndia", "StarbucksIE", "StarbucksAu", "StarbucksFrance", "StarbucksMex", "StarBucksTweet")

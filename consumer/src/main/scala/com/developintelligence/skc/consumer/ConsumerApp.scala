@@ -1,9 +1,15 @@
 package com.developintelligence.skc.consumer
 
+import java.util
+
 import com.developintelligence.skc.common.Codec
 import com.developintelligence.skc.common.schema.Tweet
 import com.typesafe.scalalogging.StrictLogging
+import org.apache.kafka.common.serialization.{Deserializer, LongDeserializer}
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
+import org.apache.spark.streaming.kafka010.{KafkaUtils, LocationStrategies}
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 object ConsumerApp extends App with StrictLogging {
   val app = new ConsumerApp()
@@ -15,58 +21,44 @@ object ConsumerApp extends App with StrictLogging {
   }
 }
 
-class ConsumerApp extends StrictLogging {
+class ConsumerApp extends StrictLogging with Serializable {
   val sparkSession: SparkSession =
     SparkSession.builder
       .master("local[2]")
       .appName("kafka2Spark2Cassandra")
       .config("spark.cassandra.connection.host", "localhost")
       .config("spark.driver.bindAddress", "127.0.0.1")
-
       .getOrCreate()
 
-  // Check this class thoroughly, it does some initializations which shouldn't be in PRODUCTION
-  // WARNING: go through this class properly.
   @transient val cassWriter = new CassandraWriter(sparkSession)
 
   def runJob(): Unit = {
+    val kafkaParams = Map[String, Object](
+      "key.deserializer" -> classOf[LongDeserializer],
+      "value.deserializer" -> classOf[TweetDeserializer],
+      "group.id" -> "use_a_separate_group_id_for_each_stream",
+      "auto.offset.reset" -> "latest",
+      "bootstrap.servers" -> "localhost:9092"
+    )
 
-    logger.info("Execution started with following configuration")
+    val ssc = new StreamingContext(sparkSession.sparkContext, Seconds(2))
+    val dStream =
+      KafkaUtils.createDirectStream[Long, Tweet](ssc, LocationStrategies.PreferConsistent, Subscribe[Long, Tweet](Set("test3"), kafkaParams))
 
-    import sparkSession.implicits._
-
-    val lines = sparkSession.readStream
-      .format("kafka")
-      .option("subscribe", "tweet_queue")
-      .option("kafka.bootstrap.servers", "localhost:9092")
-      .option("startingOffsets", "latest")
-      .load()
-    //      .selectExpr("value",
-    //                  "CAST(topic as STRING)",
-    //                  "CAST(partition as INTEGER)")
-
-    lines.printSchema()
-
-    //    val df = lines
-    //      .select($"value")
-    //      .withColumn("deserialized", Codec.deserializeMessage($"value"))
-    //      .select($"deserialized")
-    //
-    //    df.printSchema()
-    //
-    //    val ds = df
-    //      .select($"deserialized.user_id",
-    //              $"deserialized.time",
-    //              $"deserialized.event")
-    //      .as[Tweet]
-    //
-    //    val query =
-    //      ds.writeStream
-    //        .queryName("kafka2Spark2Cassandra")
-    //        .foreach(cassWriter.writer)
-    //        .start
-    //
-    //    query.awaitTermination()
-    sparkSession.stop()
+    // An RDD is created at each interval specified in the instantiation of the StreamingContext
+    // Can we do anything more interesting with it than just print it out?
+    dStream.foreachRDD { rdd =>
+      rdd.foreach { msg =>
+        println(msg)
+      }
+    }
+    ssc.start()
+    ssc.awaitTermination()
   }
+}
+
+class TweetDeserializer extends Deserializer[Tweet] {
+  override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {} // nothing to do
+  override def deserialize(topic: String, data: Array[Byte]): Tweet = Codec.deserializeMessage(data)
+  override def close(): Unit = {} // nothing to do
 }
